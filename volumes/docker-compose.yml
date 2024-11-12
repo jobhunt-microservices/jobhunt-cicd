@@ -1,0 +1,120 @@
+# docker-compose up -d redis mongodb mysql postgres rabbitmq elasticsearch kibana notification
+version: "3.9"
+name: "jobhunt-containers"
+services:
+  # requirement technical
+  redis:
+    container_name: redis_container
+    image: arm64v8/redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --loglevel warning
+    volumes:
+      - ./docker-volumes/cache:/data
+  mongodb:
+    container_name: mongodb_container
+    image: mongodb/mongodb-community-server:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=Asdfgh1@3
+    volumes:
+      - ./docker-volumes/data:/data/db
+  mysql:
+    container_name: mysql_container
+    image: arm64v8/mysql:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=Asdfgh1@3
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=Asdfgh1@3
+      - MYSQL_DATABASE=jobhunt_auth
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker-volumes/mysql:/var/lib/mysql
+  postgres:
+    container_name: postgres_container
+    image: arm64v8/postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=Asdfgh1@3
+      - POSTGRES_DB=jobhunt_review
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker-volumes/postgres:/var/lib/postgresql
+  rabbitmq:
+    container_name: rabbitmq_container
+    image: arm64v8/rabbitmq:3-management-alpine
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=Asdfgh1@3
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  elasticsearch:
+    container_name: elasticsearch_container
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - ELASTIC_PASSWORD=Asdfgh1@3
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.authc.api_key.enabled=true
+      - xpack.monitoring.collection.enabled=true
+      - xpack.security.enrollment.enabled=true
+    volumes:
+      - ./docker-volumes/elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  kibana:
+    container_name: kibana_container
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=["http://elasticsearch_container:9200"]
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    networks:
+      - elastic
+    depends_on:
+      - elasticsearch
+  # built services
+  notification:
+    container_name: notification_container
+    build:
+      context: ../microservices/2-notification-service
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - "4001:4001"
+    env_file:
+      - ../microservices/2-notification-service/.env
+    environment:
+      - NODE_ENV=development
+      - ENABLE_APM=0
+      - CLIENT_URL=http://localhost:3000
+      - RABBITMQ_ENDPOINT=amqp://admin:Asdfgh1@3@rabbitmq_container:5672
+      - SENDER_EMAIL=crystal.heller59@ethereal.email
+      - SENDER_PASSWORD=QNxXSF1uRNm9QZbtBm
+      - ELASTIC_SEARCH_URL=http://admin:Asdfgh1@3@elasticsearch_container:9200
+      - ELASTIC_APM_SERVER_URL=http://elasticsearch_container:8200
+      - ELASTIC_APM_SECRET_TOKEN=
+    depends_on:
+      - elasticsearch
+networks:
+  elastic:
+    name: elastic
