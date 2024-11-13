@@ -1,4 +1,4 @@
-# docker-compose up -d redis mongodb mysql postgres rabbitmq elasticsearch kibana notification
+# docker-compose up -d redis mongodb mysql postgres rabbitmq elasticsearch kibana notification gateway
 version: "3.9"
 name: "jobhunt-containers"
 services:
@@ -93,6 +93,36 @@ services:
     depends_on:
       - elasticsearch
   # built services
+  gateway:
+    container_name: gateway_container
+    build:
+      context: ../microservices/1-gateway-service
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - ../microservices/1-gateway-service/.env
+    environment:
+      - NODE_ENV=development
+      - ENABLE_APM=0
+      - GATEWAY_JWT_TOKEN=4d3ec4249ecb5c1d475d846af1697feb
+      - JWT_TOKEN=318be04d07bc60325d77c4d8a8537bc2
+      - SECRET_KEY_ONE=6d94629edbd091dfc5aa2d1e18c4d78a
+      - SECRET_KEY_TWO=fd8adc0b540e219044b0ac3fcec4e371
+      # - CLIENT_URL=http://localhost:3000
+      # - AUTH_BASE_URL=http://localhost:4002
+      # - USERS_BASE_URL=http://localhost:4003
+      # - GIG_BASE_URL=http://localhost:4004
+      # - MESSAGE_BASE_URL=http://localhost:4005
+      # - ORDER_BASE_URL=http://localhost:4006
+      # - REVIEW_BASE_URL=http://localhost:4007
+      - REDIS_HOST=redis://redis_container:6379
+      - ELASTIC_SEARCH_URL=http://admin:Asdfgh1@3@elasticsearch_container:9200
+      - ELASTIC_APM_SERVER_URL=http://localhost:8200
+      - ELASTIC_APM_SECRET_TOKEN=
+    depends_on:
+      - elasticsearch
   notification:
     container_name: notification_container
     build:
