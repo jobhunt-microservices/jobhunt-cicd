@@ -20,9 +20,10 @@ services:
       - "27017:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=Asdfgh1@3
+      - MONGO_INITDB_ROOT_PASSWORD=Asdfgh123
+      - MONGO_INITDB_DATABASE=jobhunt_users
     volumes:
-      - ./docker-volumes/data:/data/db
+      - ./docker-volumes/mongodb:/data/db
   mysql:
     container_name: mysql_container
     image: arm64v8/mysql:latest
